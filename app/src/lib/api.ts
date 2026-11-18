@@ -1,7 +1,27 @@
+import AsyncStorage from "@react-native-async-storage/async-storage";
+import { TEST_BUILD } from "./config";
 import type { AccountUser, Resume, TailorResult, Usage } from "./types";
 
 // Set EXPO_PUBLIC_API_URL in app/.env.local (dev) or in eas.json (store builds).
-const API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8787").replace(/\/$/, "");
+const DEFAULT_API_URL = (process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8787").replace(/\/$/, "");
+const SERVER_URL_KEY = "tailormade.serverUrl";
+let API_URL = DEFAULT_API_URL;
+
+export const getServerUrl = () => API_URL;
+
+/** Test builds only: lets you point the app at a server without rebuilding. */
+export async function loadServerUrl(): Promise<void> {
+  if (!TEST_BUILD) return;
+  const saved = await AsyncStorage.getItem(SERVER_URL_KEY).catch(() => null);
+  if (saved) API_URL = saved;
+}
+
+export async function setServerUrl(url: string): Promise<void> {
+  if (!TEST_BUILD) return;
+  const clean = url.trim().replace(/\/$/, "");
+  API_URL = clean || DEFAULT_API_URL;
+  await AsyncStorage.setItem(SERVER_URL_KEY, API_URL);
+}
 
 let sessionToken: string | null = null;
 let onUnauthenticated: (() => void) | null = null;

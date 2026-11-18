@@ -27,7 +27,8 @@
         "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
         "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "",
         "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "",
-        "EXPO_PUBLIC_PRIVACY_URL": "https://YOUR-SITE.example.com/privacy"
+        "EXPO_PUBLIC_PRIVACY_URL": "https://YOUR-SITE.example.com/privacy",
+        "EXPO_PUBLIC_TEST_BUILD": "1"
       }
     },
     "production": {

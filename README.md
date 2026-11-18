@@ -62,6 +62,31 @@ Payments go through [RevenueCat](https://www.revenuecat.com/) (free up to $2.5k/
 4. **Server.** Set `REVENUECAT_SECRET_KEY` (a v1 secret API key). Then add a webhook in RevenueCat pointing to `https://<your server>/api/billing/revenuecat-webhook` with an Authorization header value, and set the same value as `REVENUECAT_WEBHOOK_AUTH`.
 5. **Testing.** Use sandbox testers (App Store Connect → Users and Access → Sandbox) and Play Console license testers. Purchases need a real build from TestFlight or a Play testing track, not Expo Go.
 
+## Install a test APK on your Android phone
+
+A **test build** is for your own phone, not the store. It has a *server address* box and email *test sign-in* on the sign-in screen, and it may talk to a server over plain HTTP on your Wi-Fi. Store builds have none of this.
+
+1. **Run the server on your computer**, with the computer and phone on the same Wi-Fi:
+   ```bash
+   cd server
+   cp .env.example .env      # set ANTHROPIC_API_KEY and ALLOW_DEV_LOGIN=1
+   npm install && npm run dev
+   ```
+   Find your computer's local IP address (`ipconfig` on Windows, System Settings → Wi-Fi → Details on Mac, e.g. `192.168.1.23`). On Windows, click **Allow** if the firewall asks about Node.js.
+2. **Install the APK.** Copy `TailorMade-test.apk` to the phone and tap it. Android asks you to allow installing from that app (Files, Chrome, Drive…) the first time. If Play Protect warns that it's from an unknown developer, tap *More details → Install anyway*. That warning is normal for apps not from the Play Store.
+3. **Open TailorMade Test.** Enter `http://<your computer's IP>:8787` as the server address and any email in *Test sign-in*.
+
+**Build a new test APK**
+- *In the cloud (easiest):* `cd app && npx eas-cli@latest build --platform android --profile preview`, then open the link it prints on your phone.
+- *On a computer with the Android SDK:*
+  ```bash
+  cd app
+  EXPO_PUBLIC_TEST_BUILD=1 npx expo prebuild --platform android --clean
+  cd android && EXPO_PUBLIC_TEST_BUILD=1 ./gradlew assembleRelease
+  # → android/app/build/outputs/apk/release/app-release.apk
+  ```
+  Local test builds are signed with Android's shared debug key. That's fine for your own phone, never for the Play Store.
+
 ## Set up Sign in with Apple and Google
 
 **Apple** (iOS)

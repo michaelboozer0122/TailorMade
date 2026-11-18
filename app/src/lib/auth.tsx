@@ -90,6 +90,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     api.setUnauthenticatedHandler(() => void clearSession());
     (async () => {
+      await api.loadServerUrl();
       const [token, rawUser] = await Promise.all([
         SecureStore.getItemAsync(TOKEN_KEY).catch(() => null),
         SecureStore.getItemAsync(USER_KEY).catch(() => null),
