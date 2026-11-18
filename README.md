@@ -47,6 +47,21 @@ npx expo start              # scan the QR code with Expo Go on your phone
 
 In Expo Go, use the **Dev sign-in** box on the sign-in screen. It appears only in development builds and works only when the server has `ALLOW_DEV_LOGIN=1`. Google Sign-In is native code that Expo Go doesn't include. To test real Google/Apple sign-in, make a development build: `npx eas-cli@latest build --profile development --platform ios` (or `android`), install it, then run `npx expo start`.
 
+## Subscriptions (Pro)
+
+Payments go through [RevenueCat](https://www.revenuecat.com/) (free up to $2.5k/month in revenue). It handles App Store and Google Play billing, receipts, renewals and refunds. Our user ID is RevenueCat's `app_user_id`, and the server always asks RevenueCat's API for the current status. It never trusts what the app says.
+
+- **Upgrade screen** (`app/src/app/upgrade.tsx`): shows the plans from your RevenueCat offering, with Subscribe and Restore purchases buttons, plus the auto-renewal text and Terms/Privacy links that Apple requires. It appears when a free user runs out, and from the home and Account screens.
+- **Unlocking Pro:** after a purchase the app calls `POST /api/billing/sync`, so Pro turns on within seconds. RevenueCat's webhook (`POST /api/billing/revenuecat-webhook`) also keeps the server up to date on renewals, cancellations, refunds and billing problems (grace periods count as active).
+- **Manual overrides** still work: `npm run set-plan -- someone@example.com pro` (set back to `free` to go back to their subscription status).
+
+**Setup**
+1. **Stores.** In App Store Connect and Play Console, create auto-renewing subscription products, e.g. `pro_monthly` and `pro_annual`. Apple also needs the Paid Apps agreement signed and banking/tax details filled in.
+2. **RevenueCat.** Create a project and add the iOS and Android apps. Create an entitlement **`pro`**, attach both products to it, then create an offering marked *current* with monthly/annual packages.
+3. **App** (`app/eas.json`): `EXPO_PUBLIC_REVENUECAT_IOS_KEY` and `EXPO_PUBLIC_REVENUECAT_ANDROID_KEY` (public SDK keys), plus `EXPO_PUBLIC_PRIVACY_URL`. `EXPO_PUBLIC_TERMS_URL` is optional and defaults to Apple's standard EULA.
+4. **Server.** Set `REVENUECAT_SECRET_KEY` (a v1 secret API key). Then add a webhook in RevenueCat pointing to `https://<your server>/api/billing/revenuecat-webhook` with an Authorization header value, and set the same value as `REVENUECAT_WEBHOOK_AUTH`.
+5. **Testing.** Use sandbox testers (App Store Connect → Users and Access → Sandbox) and Play Console license testers. Purchases need a real build from TestFlight or a Play testing track, not Expo Go.
+
 ## Set up Sign in with Apple and Google
 
 **Apple** (iOS)

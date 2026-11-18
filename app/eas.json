@@ -10,7 +10,10 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "http://192.168.1.10:8787",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "",
+        "EXPO_PUBLIC_PRIVACY_URL": "https://YOUR-SITE.example.com/privacy"
       }
     },
     "preview": {
@@ -21,7 +24,10 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://YOUR-SERVER.example.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "",
+        "EXPO_PUBLIC_PRIVACY_URL": "https://YOUR-SITE.example.com/privacy"
       }
     },
     "production": {
@@ -29,7 +35,10 @@
       "env": {
         "EXPO_PUBLIC_API_URL": "https://YOUR-SERVER.example.com",
         "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
-        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com"
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
+        "EXPO_PUBLIC_REVENUECAT_IOS_KEY": "",
+        "EXPO_PUBLIC_REVENUECAT_ANDROID_KEY": "",
+        "EXPO_PUBLIC_PRIVACY_URL": "https://YOUR-SITE.example.com/privacy"
       }
     }
   },

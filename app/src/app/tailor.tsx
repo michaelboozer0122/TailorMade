@@ -58,7 +58,10 @@ export default function Tailor() {
       const message = e instanceof Error ? e.message : String(e);
       if (isQuotaError(e)) {
         refreshUsage().catch(() => {});
-        Alert.alert("Monthly limit reached", message);
+        Alert.alert("Monthly limit reached", message, [
+          { text: "OK", style: "cancel" },
+          { text: "See Pro", onPress: () => router.push("/upgrade") },
+        ]);
       } else if (mode === "link") {
         Alert.alert("Couldn't use that link", message, [
           { text: "OK" },

@@ -31,17 +31,36 @@ db.exec(`
   CREATE INDEX IF NOT EXISTS usage_user_kind_time ON usage (user_id, kind, created_at);
 `);
 
+// Migrations for databases created before subscriptions existed.
+const userColumns = new Set(
+  (db.prepare("PRAGMA table_info(users)").all() as { name: string }[]).map((c) => c.name),
+);
+if (!userColumns.has("sub_active")) db.exec("ALTER TABLE users ADD COLUMN sub_active INTEGER NOT NULL DEFAULT 0");
+if (!userColumns.has("sub_expires_at")) db.exec("ALTER TABLE users ADD COLUMN sub_expires_at INTEGER");
+if (!userColumns.has("sub_product")) db.exec("ALTER TABLE users ADD COLUMN sub_product TEXT NOT NULL DEFAULT ''");
+
 // A crash mid-request can leave 'pending' rows; don't let them count against users forever.
 db.prepare("DELETE FROM usage WHERE status = 'pending' AND created_at < ?").run(Date.now() - 15 * 60_000);
 
 export type Provider = "apple" | "google" | "dev";
+
+export interface Subscription {
+  active: boolean;
+  /** null = never expires (lifetime) or no subscription */
+  expiresAt: number | null;
+  product: string;
+}
 
 export interface User {
   id: string;
   provider: Provider;
   email: string;
   name: string;
+  /** Effective plan: a manual override if set, else 'pro' while subscribed, else 'free'. */
   plan: string;
+  /** Plan set by an admin with `npm run set-plan`; 'free' means no override. */
+  manualPlan: string;
+  subscription: Subscription;
   createdAt: number;
 }
 
@@ -51,17 +70,29 @@ interface UserRow {
   email: string;
   name: string;
   plan: string;
+  sub_active: number;
+  sub_expires_at: number | null;
+  sub_product: string;
   created_at: number;
 }
 
-const toUser = (r: UserRow): User => ({
-  id: r.id,
-  provider: r.provider,
-  email: r.email,
-  name: r.name,
-  plan: r.plan,
-  createdAt: r.created_at,
-});
+const SUBSCRIPTION_PLAN = "pro";
+
+function toUser(r: UserRow): User {
+  const expiresAt = r.sub_expires_at === null ? null : Number(r.sub_expires_at);
+  // Check expiry here too, so a missed cancellation webhook can't leave someone on Pro forever.
+  const subscribed = r.sub_active === 1 && (expiresAt === null || expiresAt > Date.now());
+  return {
+    id: r.id,
+    provider: r.provider,
+    email: r.email,
+    name: r.name,
+    plan: r.plan !== "free" ? r.plan : subscribed ? SUBSCRIPTION_PLAN : "free",
+    manualPlan: r.plan,
+    subscription: { active: subscribed, expiresAt: subscribed ? expiresAt : null, product: r.sub_product },
+    createdAt: r.created_at,
+  };
+}
 
 export function upsertUser(provider: Provider, sub: string, email: string, name: string): User {
   const existing = db
@@ -92,6 +123,15 @@ export function deleteUser(id: string): void {
 
 export function setPlanByEmail(email: string, plan: string): number {
   return Number(db.prepare("UPDATE users SET plan = ? WHERE lower(email) = lower(?)").run(plan, email).changes);
+}
+
+export function setSubscription(userId: string, sub: Subscription): void {
+  db.prepare("UPDATE users SET sub_active = ?, sub_expires_at = ?, sub_product = ? WHERE id = ?").run(
+    sub.active ? 1 : 0,
+    sub.expiresAt,
+    sub.product,
+    userId,
+  );
 }
 
 export function countUsage(userId: string, kind: string, since: number): number {

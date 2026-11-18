@@ -3,6 +3,7 @@ import * as SecureStore from "expo-secure-store";
 import { createContext, useCallback, useContext, useEffect, useMemo, useState, type ReactNode } from "react";
 import { Platform } from "react-native";
 import * as api from "./api";
+import { identifyPurchaser, resetPurchaser } from "./purchases";
 import { clearAllData, setStorageUser } from "./storage";
 import type { AccountUser, Usage } from "./types";
 
@@ -59,7 +60,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<AccountUser | null>(null);
   const [usage, setUsage] = useState<Usage | null>(null);
 
+  // Keep RevenueCat's user ID in step with the signed-in account.
+  useEffect(() => {
+    if (user) identifyPurchaser(user.id).catch((e) => console.warn("RevenueCat setup failed", e));
+  }, [user]);
+
   const clearSession = useCallback(async () => {
+    await resetPurchaser();
     api.setSessionToken(null);
     setStorageUser(null);
     await SecureStore.deleteItemAsync(TOKEN_KEY).catch(() => {});

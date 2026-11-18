@@ -34,6 +34,7 @@ function Root() {
       <Stack.Screen name="account" options={{ title: "Account" }} />
       <Stack.Screen name="tailor" options={{ title: "Tailor for a Job" }} />
       <Stack.Screen name="result/[id]" options={{ title: "Tailored Resume" }} />
+      <Stack.Screen name="upgrade" options={{ title: "Upgrade", presentation: "modal" }} />
     </Stack>
   );
 }

@@ -1,8 +1,9 @@
-import { useFocusEffect } from "expo-router";
+import { router, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text } from "react-native";
 import { Button, Card, colors, SectionTitle } from "../components/ui";
 import { useAuth } from "../lib/auth";
+import { openManageSubscription } from "../lib/purchases";
 import { formatReset } from "../lib/usage";
 
 const PROVIDER_LABEL = { apple: "Apple", google: "Google", dev: "Dev sign-in" } as const;
@@ -20,7 +21,10 @@ export default function Account() {
   function confirmDelete() {
     Alert.alert(
       "Delete your account?",
-      "This permanently deletes your TailorMade account and removes your resume and tailored versions from this device. This can't be undone.",
+      "This permanently deletes your TailorMade account and removes your resume and tailored versions from this device. This can't be undone." +
+        (usage?.subscription.active
+          ? "\n\nDeleting your account does NOT cancel your subscription. Cancel it first under Manage subscription."
+          : ""),
       [
         { text: "Cancel", style: "cancel" },
         {
@@ -59,6 +63,16 @@ export default function Account() {
           <Text style={[styles.text, { marginTop: 6 }]}>
             Resume uploads: {usage.parse.used} of {usage.parse.limit} today
           </Text>
+          {usage.subscription.active ? (
+            <>
+              {usage.subscription.expiresAt && (
+                <Text style={styles.muted}>Subscription renews or ends {formatReset(usage.subscription.expiresAt)}</Text>
+              )}
+              <Button title="Manage subscription" variant="secondary" onPress={openManageSubscription} />
+            </>
+          ) : (
+            usage.plan === "free" && <Button title="Upgrade to Pro" onPress={() => router.push("/upgrade")} />
+          )}
         </Card>
       )}
 

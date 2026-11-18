@@ -67,6 +67,15 @@ export const signInDev = (email: string) =>
 
 export const getMe = () => request<{ user: AccountUser; usage: Usage }>("/api/me");
 
+/** Asks the server to re-check the subscription with RevenueCat (call after purchase/restore). */
+export const syncBilling = () => request<{ usage: Usage }>("/api/billing/sync", { method: "POST" });
+
+export interface PlanLimits {
+  tailorPerMonth: number;
+  parsePerDay: number;
+}
+export const getPlans = () => request<{ plans: Record<string, PlanLimits> }>("/api/plans");
+
 export const deleteAccount = () => request<{ ok: true }>("/api/me", { method: "DELETE" });
 
 export async function parseResume(file: {

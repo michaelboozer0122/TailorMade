@@ -12,10 +12,11 @@ import {
   signInWithApple,
   signInWithGoogle,
 } from "./auth.js";
+import { BillingError, billingConfigured, revenueCatWebhook, syncSubscription } from "./billing.js";
 import { parseResumePdf, tailorResume, TailorError } from "./claude.js";
-import { deleteUser, type User } from "./db.js";
+import { deleteUser, getUser, type User } from "./db.js";
 import { fetchJobPosting, JobFetchError } from "./jobFetch.js";
-import { QuotaExceededError, usageSummary, withQuota } from "./limits.js";
+import { PLANS, QuotaExceededError, usageSummary, withQuota } from "./limits.js";
 import { TailorRequestSchema } from "./schema.js";
 
 const PORT = Number(process.env.PORT ?? 8787);
@@ -108,6 +109,26 @@ app.delete("/api/me", requireAuth, (_req, res) => {
   res.json({ ok: true });
 });
 
+// ---- Subscriptions (RevenueCat) ----
+
+// Public: lets the app's upgrade screen show the real limits for each plan.
+app.get("/api/plans", (_req, res) => {
+  res.json({ plans: PLANS });
+});
+
+app.post("/api/billing/revenuecat-webhook", revenueCatWebhook);
+
+// Called by the app right after a purchase or restore, so Pro unlocks without waiting for the webhook.
+app.post("/api/billing/sync", requireAuth, rateLimit, async (_req, res, next) => {
+  try {
+    const user = currentUser(res);
+    if (billingConfigured()) await syncSubscription(user.id);
+    res.json({ usage: usageSummary(getUser(user.id)!) });
+  } catch (err) {
+    next(err);
+  }
+});
+
 // ---- Resume features (signed-in, metered) ----
 
 app.post("/api/resume/parse", requireAuth, rateLimit, upload.single("resume"), async (req, res, next) => {
@@ -161,6 +182,10 @@ app.use((err: unknown, _req: Request, res: Response, _next: NextFunction) => {
     return res.status(429).json({ error: err.message, code: "quota_exceeded", kind: err.kind, resetsAt: err.resetsAt });
   }
   if (err instanceof AuthError) return res.status(401).json({ error: err.message, code: "auth_failed" });
+  if (err instanceof BillingError) {
+    console.error("Billing:", err.message);
+    return res.status(502).json({ error: "Couldn't check your subscription right now. Please try again." });
+  }
   if (err instanceof JobFetchError) return res.status(422).json({ error: err.message });
   if (err instanceof TailorError) return res.status(err.status).json({ error: err.message });
   if (err instanceof multer.MulterError) return res.status(400).json({ error: "PDF must be under 10 MB." });

@@ -75,5 +75,10 @@ export function usageSummary(user: User) {
     const used = countUsage(user.id, kind, start);
     return { used, limit, remaining: Math.max(0, limit - used), resetsAt };
   };
-  return { plan: user.plan, tailor: summarize("tailor"), parse: summarize("parse") };
+  return {
+    plan: user.plan,
+    subscription: { active: user.subscription.active, expiresAt: user.subscription.expiresAt },
+    tailor: summarize("tailor"),
+    parse: summarize("parse"),
+  };
 }

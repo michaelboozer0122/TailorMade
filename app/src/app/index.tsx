@@ -72,6 +72,13 @@ export default function Home() {
                   : `${usage.tailor.remaining} of ${usage.tailor.limit} tailored resumes left this month`}
               </Text>
             )}
+            {usage?.plan === "free" && (
+              <Button
+                title={outOfTailors ? "Upgrade to Pro" : "Get more with Pro"}
+                variant={outOfTailors ? "primary" : "secondary"}
+                onPress={() => router.push("/upgrade")}
+              />
+            )}
           </Card>
 
           {history.length > 0 && <SectionTitle>Recent</SectionTitle>}

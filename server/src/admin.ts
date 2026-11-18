@@ -1,4 +1,5 @@
 // Usage: npm run set-plan -- someone@example.com pro
+// Manual override (e.g. friends, testers). Set back to "free" to fall back to their subscription status.
 import { setPlanByEmail } from "./db.js";
 import { PLANS } from "./limits.js";
 

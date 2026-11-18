@@ -85,6 +85,7 @@ export interface UsageBucket {
 
 export interface Usage {
   plan: string;
+  subscription: { active: boolean; expiresAt: number | null };
   tailor: UsageBucket;
   parse: UsageBucket;
 }
