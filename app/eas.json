@@ -5,23 +5,39 @@
   },
   "build": {
     "development": {
-      "developmentClient": false,
+      "developmentClient": true,
       "distribution": "internal",
-      "env": { "EXPO_PUBLIC_API_URL": "http://192.168.1.10:8787" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "http://192.168.1.10:8787",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com"
+      }
     },
     "preview": {
       "distribution": "internal",
-      "android": { "buildType": "apk" },
-      "env": { "EXPO_PUBLIC_API_URL": "https://YOUR-SERVER.example.com" }
+      "android": {
+        "buildType": "apk"
+      },
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://YOUR-SERVER.example.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com"
+      }
     },
     "production": {
       "autoIncrement": true,
-      "env": { "EXPO_PUBLIC_API_URL": "https://YOUR-SERVER.example.com" }
+      "env": {
+        "EXPO_PUBLIC_API_URL": "https://YOUR-SERVER.example.com",
+        "EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID": "REPLACE.apps.googleusercontent.com",
+        "EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID": "REPLACE.apps.googleusercontent.com"
+      }
     }
   },
   "submit": {
     "production": {
-      "android": { "track": "internal" },
+      "android": {
+        "track": "internal"
+      },
       "ios": {}
     }
   }

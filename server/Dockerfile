@@ -8,6 +8,9 @@ RUN npm run build && npm prune --omit=dev
 FROM node:22-slim
 WORKDIR /app
 ENV NODE_ENV=production
+ENV DB_PATH=/data/tailormade.db
+RUN mkdir -p /data && chown node:node /data
+VOLUME /data
 COPY --from=build /app/node_modules ./node_modules
 COPY --from=build /app/dist ./dist
 COPY package.json ./

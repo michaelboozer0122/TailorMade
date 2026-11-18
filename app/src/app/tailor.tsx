@@ -3,6 +3,8 @@ import { useState } from "react";
 import { Alert, KeyboardAvoidingView, Platform, Pressable, ScrollView, StyleSheet, Text, TextInput, View } from "react-native";
 import { Button, Card, colors, SectionTitle } from "../components/ui";
 import { tailor } from "../lib/api";
+import { useAuth } from "../lib/auth";
+import { isQuotaError } from "../lib/usage";
 import { addHistoryItem, loadProfile } from "../lib/storage";
 
 type Mode = "link" | "text" | "title";
@@ -19,6 +21,8 @@ export default function Tailor() {
   const [jobText, setJobText] = useState("");
   const [jobTitle, setJobTitle] = useState("");
   const [busy, setBusy] = useState(false);
+  const { usage, setUsage, refreshUsage } = useAuth();
+  const outOfTailors = usage ? usage.tailor.remaining <= 0 : false;
 
   const canSubmit =
     (mode === "link" && /^https?:\/\/\S+\.\S+/.test(jobUrl.trim())) ||
@@ -33,12 +37,13 @@ export default function Tailor() {
     }
     setBusy(true);
     try {
-      const { result, jobDescription } = await tailor({
+      const { result, jobDescription, usage } = await tailor({
         profile: profile.resume,
         jobUrl: mode === "link" ? jobUrl.trim() : undefined,
         jobText: mode === "text" ? jobText.trim() : undefined,
         jobTitle: jobTitle.trim() || undefined,
       });
+      setUsage(usage);
       const id = `${Date.now()}`;
       await addHistoryItem({
         id,
@@ -51,7 +56,10 @@ export default function Tailor() {
       router.replace(`/result/${id}`);
     } catch (e) {
       const message = e instanceof Error ? e.message : String(e);
-      if (mode === "link") {
+      if (isQuotaError(e)) {
+        refreshUsage().catch(() => {});
+        Alert.alert("Monthly limit reached", message);
+      } else if (mode === "link") {
         Alert.alert("Couldn't use that link", message, [
           { text: "OK" },
           { text: "Paste description instead", onPress: () => setMode("text") },
@@ -125,7 +133,14 @@ export default function Tailor() {
           />
         </Card>
 
-        <Button title={busy ? "Tailoring…" : "Tailor my resume"} onPress={submit} loading={busy} disabled={!canSubmit} />
+        <Button title={busy ? "Tailoring…" : "Tailor my resume"} onPress={submit} loading={busy} disabled={!canSubmit || outOfTailors} />
+        {usage && (
+          <Text style={styles.hint}>
+            {outOfTailors
+              ? "You've used all your tailored resumes for this month."
+              : `Uses 1 of your ${usage.tailor.remaining} remaining tailored resumes this month. Failed attempts don't count.`}
+          </Text>
+        )}
         {busy && <Text style={styles.hint}>This usually takes 30–90 seconds. Keep the app open.</Text>}
       </ScrollView>
     </KeyboardAvoidingView>

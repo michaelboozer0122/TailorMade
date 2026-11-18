@@ -1,20 +1,26 @@
-import { router, useFocusEffect } from "expo-router";
+import { router, Stack, useFocusEffect } from "expo-router";
 import { useCallback, useState } from "react";
 import { FlatList, Pressable, StyleSheet, Text, View } from "react-native";
 import { Button, Card, colors, SectionTitle } from "../components/ui";
+import { useAuth } from "../lib/auth";
 import { loadHistory, loadProfile } from "../lib/storage";
+import { formatReset } from "../lib/usage";
 import type { HistoryItem, StoredProfile } from "../lib/types";
 
 export default function Home() {
   const [profile, setProfile] = useState<StoredProfile | null>(null);
   const [history, setHistory] = useState<HistoryItem[]>([]);
+  const { usage, refreshUsage } = useAuth();
 
   useFocusEffect(
     useCallback(() => {
       loadProfile().then(setProfile);
       loadHistory().then(setHistory);
-    }, []),
+      refreshUsage().catch(() => {});
+    }, [refreshUsage]),
   );
+
+  const outOfTailors = usage ? usage.tailor.remaining <= 0 : false;
 
   return (
     <FlatList
@@ -23,6 +29,15 @@ export default function Home() {
       keyExtractor={(h) => h.id}
       ListHeaderComponent={
         <View style={{ gap: 16 }}>
+          <Stack.Screen
+            options={{
+              headerRight: () => (
+                <Pressable onPress={() => router.push("/account")} hitSlop={12} accessibilityRole="button">
+                  <Text style={styles.headerLink}>Account</Text>
+                </Pressable>
+              ),
+            }}
+          />
           <Text style={styles.tagline}>
             Upload your resume once. Get a version tailored to every job you apply for.
           </Text>
@@ -49,7 +64,14 @@ export default function Home() {
           <Card>
             <SectionTitle>Step 2 · Pick a job</SectionTitle>
             <Text style={styles.muted}>Paste a job link, the job description, or just a job title.</Text>
-            <Button title="Tailor my resume" disabled={!profile} onPress={() => router.push("/tailor")} />
+            <Button title="Tailor my resume" disabled={!profile || outOfTailors} onPress={() => router.push("/tailor")} />
+            {usage && (
+              <Text style={[styles.muted, outOfTailors && { color: colors.warn }]}>
+                {outOfTailors
+                  ? `You've used all ${usage.tailor.limit} tailored resumes this month. More on ${formatReset(usage.tailor.resetsAt)}.`
+                  : `${usage.tailor.remaining} of ${usage.tailor.limit} tailored resumes left this month`}
+              </Text>
+            )}
           </Card>
 
           {history.length > 0 && <SectionTitle>Recent</SectionTitle>}
@@ -83,4 +105,5 @@ const styles = StyleSheet.create({
   row: { flexDirection: "row", alignItems: "center", gap: 12 },
   rowTitle: { fontSize: 16, fontWeight: "600", color: colors.text },
   score: { fontSize: 18, fontWeight: "700", color: colors.primary },
+  headerLink: { color: colors.primary, fontSize: 16, fontWeight: "600" },
 });

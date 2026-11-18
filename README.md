@@ -15,7 +15,15 @@ server/   Small Node/TypeScript API that holds the Claude API key, reads job lin
 
 ## Why there's a server
 
-Your Anthropic API key **must not** be put inside the app. Anyone can pull it out of an app bundle. The app talks to `server/`, which keeps the key and makes the AI calls. The server keeps nothing: no database, and resumes aren't saved.
+Your Anthropic API key **must not** be put inside the app. Anyone can pull it out of an app bundle. The app talks to `server/`, which keeps the key and makes the AI calls. The server keeps only accounts and usage counts. Resumes and results are never saved on the server.
+
+## Accounts and limits
+
+- **Sign-in:** Sign in with Apple (iOS) and Google (iOS + Android). The app gets an identity token from Apple or Google. The server checks it against Apple's or Google's public keys, then issues its own 30-day session, which the app stores in the iOS Keychain or Android Keystore (`expo-secure-store`).
+- **Per-user limits:** every signed-in user has a plan. By default the free plan allows 10 tailored resumes per calendar month and 5 resume uploads per day. Change these with env vars, no app update needed. A use is counted only if the request succeeds: a bad link or an AI error doesn't use a credit. The check is atomic, so firing requests in parallel can't go over the limit.
+- **Plans:** `free` and `pro`. Promote someone with `npm run set-plan -- someone@example.com pro` (in `server/`). This is where subscriptions plug in later: a payment webhook (e.g. RevenueCat) sets the plan.
+- **Account deletion:** Account → Delete account removes the server account and the on-device data. Apple requires this for any app with sign-in.
+- **Storage:** accounts and usage are kept in a SQLite file (`DB_PATH`). On-device resume data is kept separately for each account, so a shared phone never mixes people's resumes.
 
 ## Run it locally
 
@@ -23,7 +31,7 @@ Your Anthropic API key **must not** be put inside the app. Anyone can pull it ou
 
 ```bash
 cd server
-cp .env.example .env        # put your ANTHROPIC_API_KEY in it
+cp .env.example .env        # set ANTHROPIC_API_KEY; for local testing also set ALLOW_DEV_LOGIN=1
 npm install
 npm run dev                 # http://localhost:8787
 ```
@@ -37,13 +45,35 @@ npm install
 npx expo start              # scan the QR code with Expo Go on your phone
 ```
 
+In Expo Go, use the **Dev sign-in** box on the sign-in screen. It appears only in development builds and works only when the server has `ALLOW_DEV_LOGIN=1`. Google Sign-In is native code that Expo Go doesn't include. To test real Google/Apple sign-in, make a development build: `npx eas-cli@latest build --profile development --platform ios` (or `android`), install it, then run `npx expo start`.
+
+## Set up Sign in with Apple and Google
+
+**Apple** (iOS)
+1. Apple Developer → Certificates, IDs & Profiles → Identifiers → your app ID → enable **Sign in with Apple**. EAS turns it on automatically on the first build, because `ios.usesAppleSignIn` is set.
+2. Server: `APPLE_BUNDLE_IDS=<your bundle id>`.
+
+**Google** (iOS + Android), in [Google Cloud Console](https://console.cloud.google.com/) → APIs & Services:
+1. Set up the **OAuth consent screen** (app name, support email, privacy policy URL).
+2. Credentials → Create OAuth client ID:
+   - **Web application.** This is the ID the app passes as `webClientId`, and the audience of the tokens the server checks.
+   - **iOS**, with your bundle ID.
+   - **Android**, with your package name and the SHA-1 signing fingerprint (`npx eas-cli@latest credentials` shows it). Add a second Android client with the **Play App Signing** SHA-1 from Play Console → Setup → App signing, or sign-in fails in store builds.
+3. App: set `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` and `EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID` in `app/eas.json` (and `.env.local`). In `app/app.json`, set the Google plugin's `iosUrlScheme` to the iOS client's "reversed client ID" (`com.googleusercontent.apps.…`).
+4. Server: `GOOGLE_CLIENT_IDS=<web client id>,<ios client id>`.
+
 Checks: `npm run typecheck` in both folders.
 
 ## Deploy the server
 
-`server/Dockerfile` works on any container host, such as Render, Railway, Fly.io, Google Cloud Run or AWS App Runner. Set `ANTHROPIC_API_KEY` there, and optionally `APP_TOKEN` and `RATE_LIMIT_PER_HOUR`. The host must provide HTTPS, because both stores require it in practice. Then put the server's URL in `app/eas.json` under `EXPO_PUBLIC_API_URL`.
+`server/Dockerfile` works on any container host, such as Render, Railway, Fly.io, Google Cloud Run or AWS App Runner. Set these on the host (see `server/.env.example`):
 
-> The built-in rate limit is per IP address and kept in memory. `APP_TOKEN` stops casual abuse but can be pulled out of the app. If you expect real traffic, add user accounts (e.g. Sign in with Apple/Google via Firebase Auth or Supabase), enforce per-user quotas, and charge for usage (e.g. RevenueCat subscriptions), because each tailoring run costs API money.
+- `NODE_ENV=production`, `ANTHROPIC_API_KEY`, and `SESSION_SECRET` (generate with `openssl rand -base64 48`; the server won't start in production without it).
+- `APPLE_BUNDLE_IDS`, `GOOGLE_CLIENT_IDS`, and the limit variables if you want different numbers.
+- `TRUST_PROXY=1` on hosts behind a load balancer (almost all of them).
+- A **persistent volume mounted at `/data`**. That's where the SQLite database lives. Without it, accounts and usage counts reset on every deploy.
+
+Run a single instance: SQLite and the per-IP limiter live on one machine. If you outgrow that, move `server/src/db.ts` to Postgres. The host must provide HTTPS, because both stores require it in practice. Then put the server's URL in `app/eas.json` under `EXPO_PUBLIC_API_URL`.
 
 ## Publish to the App Store and Google Play
 
@@ -79,7 +109,8 @@ EAS creates and manages the signing certificates and keystores for you. For the 
 
 - *App Store Connect → App Privacy.* Declare "User Content (resume / other user content)" used for **App Functionality**, not linked to identity, not used for tracking. Data is sent to your server and to Anthropic to generate results and isn't stored.
 - *Google Play → Data safety.* Mark that it collects "Files and docs" and "Personal info (name, email, phone, address)". Say the data is processed ephemerally, encrypted in transit, not shared for advertising, and can be deleted in the app (Resume → "Delete all my data").
-- *Apple review notes.* Give reviewers a sample resume PDF and a public job link so they can test the full flow. Apple rejects apps whose main feature they can't try.
+- *Apple review notes.* Reviewers can sign in with their own Apple ID. Give them a sample resume PDF and a public job link so they can test the full flow. Apple rejects apps whose main feature they can't try. Make sure a fresh account has free uses left. Mention that account deletion is under Account → Delete account (guideline 5.1.1(v)).
+- *Google Play → Data safety → Account.* Declare that the app creates accounts, collects email and name for account management, and offers in-app deletion. Play also asks for a **web link where users can request account deletion**. Add a section to your privacy page saying how (e.g. "email us" or "use Account → Delete account in the app").
 - *AI disclosure.* The app shows "AI can make mistakes" on every result. Keep this, and mention AI generation in the store description.
 - *Testing first.* Use TestFlight (iOS) and the Internal testing track (Android) before going to production. Google requires new personal developer accounts to run a closed test with 12 testers for 14 days before going public.
 
@@ -87,7 +118,9 @@ EAS creates and manages the signing certificates and keystores for you. For the 
 
 | Step | Endpoint | What happens |
 |---|---|---|
+| Sign in | `POST /api/auth/apple` / `POST /api/auth/google` | Checks the Apple/Google identity token and returns a session token, the user and current usage. |
+| Account | `GET /api/me`, `DELETE /api/me` | Current usage and limits; delete the account. |
 | Upload resume | `POST /api/resume/parse` (multipart `resume`) | The PDF is sent to Claude as a document and comes back as structured JSON (`server/src/schema.ts`). |
 | Tailor | `POST /api/tailor` `{profile, jobUrl? \| jobText? \| jobTitle?}` | The server fetches the job page: it reads schema.org `JobPosting` data when present, otherwise strips the HTML, and blocks private network addresses. Claude then returns the tailored resume, fit analysis and cover letter as validated JSON. |
 
-Model: `claude-opus-5-5` with structured outputs and server-side refusal fallback (`server/src/claude.ts`).
+All resume endpoints require `Authorization: Bearer <session>` and count against the user's limits (`server/src/limits.ts`). Model: `claude-opus-5-5` with structured outputs and server-side refusal fallback (`server/src/claude.ts`).

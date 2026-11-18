@@ -6,11 +6,13 @@
     "dev": "tsx watch --env-file-if-exists=.env src/index.ts",
     "build": "tsc",
     "start": "node dist/index.js",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "set-plan": "node --env-file-if-exists=.env --import tsx src/admin.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.10.0",
     "express": "^5.3.0",
+    "jose": "^6.2.17",
     "multer": "^2.5.0",
     "zod": "^4.6.7"
   },
@@ -24,6 +26,6 @@
   "private": true,
   "type": "module",
   "engines": {
-    "node": ">=20"
+    "node": ">=22.13"
   }
 }

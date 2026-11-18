@@ -68,3 +68,23 @@ export interface HistoryItem {
   jobDescription: string;
   result: TailorResult;
 }
+
+export interface AccountUser {
+  id: string;
+  email: string;
+  name: string;
+  provider: "apple" | "google" | "dev";
+}
+
+export interface UsageBucket {
+  used: number;
+  limit: number;
+  remaining: number;
+  resetsAt: number;
+}
+
+export interface Usage {
+  plan: string;
+  tailor: UsageBucket;
+  parse: UsageBucket;
+}

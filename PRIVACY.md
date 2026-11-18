@@ -6,6 +6,7 @@ TailorMade ("the app") helps you create versions of your resume tailored to spec
 
 ## What we process
 
+- **Account information.** When you sign in with Apple or Google, we receive an account identifier and, if you share them, your name and email. We use these only to run your account and track how many resumes you've generated against your plan's limits.
 - **Your resume.** This is the PDF you upload and the information in it, such as name, contact details, work history and education.
 - **Job information.** This is the job link, job description or job title you enter.
 
@@ -19,11 +20,14 @@ TailorMade ("the app") helps you create versions of your resume tailored to spec
 
 - Your parsed resume and your tailored versions are stored **only on your device**.
 - Our server does not save your resume or results after a request is finished.
+- Our server stores your account (identifier, name, email, plan) and a count of when you used each feature.
 - Anthropic processes requests under its commercial terms and does not use API data to train its models. See https://www.anthropic.com/legal/privacy.
 
 ## Deleting your data
 
-Open **My Resume → Delete all my data** in the app, or uninstall the app. This removes everything stored on your device. We keep no copy.
+- **Delete your account:** open **Account → Delete account** in the app. This permanently deletes your account and usage records from our server and removes your resume data from the device.
+- **Remove resume data only:** open **My Resume → Remove resume from this device**, or uninstall the app.
+- You can also ask for account deletion by emailing [CONTACT EMAIL]. We'll complete it within 30 days.
 
 ## Children
 

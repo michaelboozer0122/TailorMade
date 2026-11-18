@@ -4,12 +4,14 @@ import { useEffect, useState } from "react";
 import { Alert, ScrollView, StyleSheet, Text, View } from "react-native";
 import { Button, Card, colors, SectionTitle } from "../components/ui";
 import { parseResume } from "../lib/api";
+import { useAuth } from "../lib/auth";
 import { clearAllData, loadProfile, saveProfile } from "../lib/storage";
 import type { StoredProfile } from "../lib/types";
 
 export default function Profile() {
   const [profile, setProfile] = useState<StoredProfile | null>(null);
   const [busy, setBusy] = useState(false);
+  const { setUsage } = useAuth();
 
   useEffect(() => {
     loadProfile().then(setProfile);
@@ -25,7 +27,8 @@ export default function Profile() {
     }
     setBusy(true);
     try {
-      const resume = await parseResume(file);
+      const { profile: resume, usage } = await parseResume(file);
+      setUsage(usage);
       const stored: StoredProfile = { resume, sourceFileName: file.name, updatedAt: Date.now() };
       await saveProfile(stored);
       setProfile(stored);
@@ -37,10 +40,10 @@ export default function Profile() {
   }
 
   function confirmDelete() {
-    Alert.alert("Delete all data?", "This removes your resume and every tailored version from this device.", [
+    Alert.alert("Remove from this device?", "This removes your resume and every tailored version from this phone.", [
       { text: "Cancel", style: "cancel" },
       {
-        text: "Delete",
+        text: "Remove",
         style: "destructive",
         onPress: async () => {
           await clearAllData();
@@ -110,7 +113,7 @@ export default function Profile() {
           )}
 
           <Button title="Tailor for a job →" onPress={() => router.push("/tailor")} />
-          <Button title="Delete all my data" variant="danger" onPress={confirmDelete} />
+          <Button title="Remove resume from this device" variant="danger" onPress={confirmDelete} />
         </>
       )}
     </ScrollView>
