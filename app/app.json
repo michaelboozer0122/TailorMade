@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "TailorMade",
+    "slug": "tailormade",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.tailormade.app",
+      "config": {
+        "usesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#E6F4FE",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false,
+      "package": "com.tailormade.app"
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "scheme": "tailormade",
+    "plugins": [
+      "expo-router"
+    ],
+    "extra": {}
+  }
+}
