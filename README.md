@@ -106,6 +106,8 @@ Checks: `npm run typecheck` in both folders.
 
 ## Deploy the server
 
+**Step-by-step for Render (no command line): see [DEPLOY.md](DEPLOY.md).** `render.yaml` configures it for you.
+
 `server/Dockerfile` works on any container host, such as Render, Railway, Fly.io, Google Cloud Run or AWS App Runner. Set these on the host (see `server/.env.example`):
 
 - `NODE_ENV=production`, `ANTHROPIC_API_KEY`, and `SESSION_SECRET` (generate with `openssl rand -base64 48`; the server won't start in production without it).

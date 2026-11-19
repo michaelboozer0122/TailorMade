@@ -82,8 +82,8 @@ export const signInWithAppleToken = (identityToken: string, fullName: string) =>
 export const signInWithGoogleToken = (idToken: string) =>
   request<SessionResponse>("/api/auth/google", { method: "POST", body: JSON.stringify({ idToken }) });
 
-export const signInDev = (email: string) =>
-  request<SessionResponse>("/api/auth/dev", { method: "POST", body: JSON.stringify({ email }) });
+export const signInDev = (email: string, code: string) =>
+  request<SessionResponse>("/api/auth/dev", { method: "POST", body: JSON.stringify({ email, code }) });
 
 export const getMe = () => request<{ user: AccountUser; usage: Usage }>("/api/me");
 

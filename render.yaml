@@ -1,0 +1,44 @@
+# Render Blueprint: https://render.com/docs/blueprint-spec
+# In Render: New → Blueprint → pick this repo. You'll be asked for the values marked sync: false.
+services:
+  - type: web
+    name: tailormade-api
+    runtime: docker
+    dockerfilePath: ./server/Dockerfile
+    dockerContext: ./server
+    plan: starter # persistent disks need a paid instance
+    region: oregon
+    healthCheckPath: /health
+    autoDeploy: true
+    disk:
+      name: data
+      mountPath: /data
+      sizeGB: 1
+    envVars:
+      - key: NODE_ENV
+        value: production
+      - key: TRUST_PROXY
+        value: "1"
+      - key: DB_PATH
+        value: /data/tailormade.db
+      - key: SESSION_SECRET
+        generateValue: true
+      - key: ANTHROPIC_API_KEY
+        sync: false
+      # Secret code for the test APK's "Test sign-in" (12+ characters). Leave empty to turn test sign-in off.
+      - key: TEST_ACCESS_CODE
+        sync: false
+      - key: APPLE_BUNDLE_IDS
+        value: com.tailormade.app
+      - key: GOOGLE_CLIENT_IDS
+        sync: false
+      - key: FREE_TAILORS_PER_MONTH
+        value: "10"
+      - key: FREE_PARSES_PER_DAY
+        value: "5"
+      - key: RATE_LIMIT_PER_HOUR
+        value: "60"
+      - key: REVENUECAT_SECRET_KEY
+        sync: false
+      - key: REVENUECAT_WEBHOOK_AUTH
+        sync: false

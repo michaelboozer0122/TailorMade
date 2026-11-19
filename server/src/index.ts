@@ -84,12 +84,17 @@ app.post("/api/auth/google", rateLimit, async (req, res, next) => {
 });
 
 if (DEV_LOGIN_ENABLED) {
-  console.warn("ALLOW_DEV_LOGIN is on: anyone can sign in with any email. Never enable this in production.");
-  app.post("/api/auth/dev", async (req, res, next) => {
+  console.warn(
+    process.env.TEST_ACCESS_CODE
+      ? "Test sign-in is on (requires TEST_ACCESS_CODE)."
+      : "ALLOW_DEV_LOGIN is on: anyone can sign in with any email. Never enable this in production.",
+  );
+  app.post("/api/auth/dev", rateLimit, async (req, res, next) => {
     try {
       const email = z.string().email().safeParse(req.body?.email);
       if (!email.success) return res.status(400).json({ error: "Enter an email." });
-      await sessionResponse(res, signInDev(email.data));
+      const code = typeof req.body?.code === "string" ? req.body.code : "";
+      await sessionResponse(res, signInDev(email.data, code));
     } catch (err) {
       next(err);
     }

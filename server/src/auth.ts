@@ -1,4 +1,4 @@
-import { randomBytes } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import type { NextFunction, Request, Response } from "express";
 import { createRemoteJWKSet, jwtVerify, SignJWT } from "jose";
 import { getUser, upsertUser, type User } from "./db.js";
@@ -15,7 +15,13 @@ const list = (v: string | undefined) =>
 const APPLE_AUDIENCES = list(process.env.APPLE_BUNDLE_IDS);
 // Google OAuth client IDs: the Web client ID (what the app passes as webClientId) and optionally the iOS one.
 const GOOGLE_AUDIENCES = list(process.env.GOOGLE_CLIENT_IDS);
-export const DEV_LOGIN_ENABLED = process.env.ALLOW_DEV_LOGIN === "1" && !isProd;
+// Test sign-in (any email) for sideloaded test builds:
+// - local development: ALLOW_DEV_LOGIN=1 (never active when NODE_ENV=production)
+// - a deployed server: TEST_ACCESS_CODE=<secret, 12+ chars>; the app must send the same code
+const TEST_ACCESS_CODE = process.env.TEST_ACCESS_CODE ?? "";
+if (TEST_ACCESS_CODE && TEST_ACCESS_CODE.length < 12) throw new Error("TEST_ACCESS_CODE must be at least 12 characters.");
+const OPEN_DEV_LOGIN = process.env.ALLOW_DEV_LOGIN === "1" && !isProd;
+export const DEV_LOGIN_ENABLED = OPEN_DEV_LOGIN || TEST_ACCESS_CODE !== "";
 
 const SESSION_DAYS = 30;
 const sessionSecret = (() => {
@@ -60,8 +66,15 @@ export async function signInWithGoogle(idToken: string): Promise<User> {
 }
 
 /** Local testing only (Expo Go can't run Google sign-in). Disabled when NODE_ENV=production. */
-export function signInDev(email: string): User {
-  if (!DEV_LOGIN_ENABLED) throw new AuthError("Dev sign-in is disabled.");
+function codeMatches(code: string): boolean {
+  const a = Buffer.from(code);
+  const b = Buffer.from(TEST_ACCESS_CODE);
+  return a.length === b.length && timingSafeEqual(a, b);
+}
+
+export function signInDev(email: string, code = ""): User {
+  if (!DEV_LOGIN_ENABLED) throw new AuthError("Test sign-in is turned off on this server.");
+  if (TEST_ACCESS_CODE && !codeMatches(code)) throw new AuthError("Wrong access code.");
   return upsertUser("dev", email.toLowerCase(), email, "Dev User");
 }
 

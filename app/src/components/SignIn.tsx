@@ -12,6 +12,7 @@ export function SignIn() {
   const [busy, setBusy] = useState<string | null>(null);
   const [devEmail, setDevEmail] = useState("");
   const [server, setServer] = useState(getServerUrl());
+  const [accessCode, setAccessCode] = useState("");
 
   useEffect(() => {
     if (Platform.OS === "ios") AppleAuthentication.isAvailableAsync().then(setAppleAvailable);
@@ -74,7 +75,9 @@ export function SignIn() {
               autoCorrect={false}
               keyboardType="url"
             />
-            <Text style={styles.devLabel}>Test sign-in (needs ALLOW_DEV_LOGIN=1 on the server)</Text>
+            <Text style={styles.devLabel}>
+              Test sign-in · access code is TEST_ACCESS_CODE on a deployed server (leave empty for a local server)
+            </Text>
             <TextInput
               style={styles.input}
               placeholder="you@example.com"
@@ -83,15 +86,24 @@ export function SignIn() {
               autoCapitalize="none"
               keyboardType="email-address"
             />
+            <TextInput
+              style={styles.input}
+              placeholder="Access code"
+              value={accessCode}
+              onChangeText={setAccessCode}
+              autoCapitalize="none"
+              autoCorrect={false}
+              secureTextEntry
+            />
             <Button
-              title="Dev sign-in"
+              title="Test sign-in"
               variant="secondary"
               loading={busy === "dev"}
               disabled={!!busy || !devEmail.includes("@")}
               onPress={() =>
                 run("dev", async () => {
                   await setServerUrl(server);
-                  await auth.signInDev(devEmail.trim());
+                  await auth.signInDev(devEmail.trim(), accessCode.trim());
                 })
               }
             />

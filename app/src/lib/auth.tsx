@@ -20,7 +20,7 @@ interface AuthState {
   refreshUsage: () => Promise<void>;
   signInWithApple: () => Promise<void>;
   signInWithGoogle: () => Promise<void>;
-  signInDev: (email: string) => Promise<void>;
+  signInDev: (email: string, code: string) => Promise<void>;
   signOut: () => Promise<void>;
   deleteAccount: () => Promise<void>;
 }
@@ -149,8 +149,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           throw e;
         }
       },
-      signInDev: async (email: string) => {
-        await applySession(await api.signInDev(email));
+      signInDev: async (email: string, code: string) => {
+        await applySession(await api.signInDev(email, code));
       },
       signOut: async () => {
         if (user?.provider === "google") await loadGoogle()?.GoogleSignin.signOut().catch(() => {});
